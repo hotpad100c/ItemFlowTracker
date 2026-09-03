@@ -1,0 +1,31 @@
+{
+	"schemaVersion": 1,
+	"id": "itemflowtracker",
+	"version": "${version}",
+	"name": "ItemFlowTracker",
+	"description": "Server-side tracker that highlights marked items and the containers they flow into.",
+	"authors": [
+		"Me!"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/itemflowtracker/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"ml.mypals.ItemFlowTracker"
+		]
+	},
+	"mixins": [
+		"itemflowtracker.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~26.2",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}

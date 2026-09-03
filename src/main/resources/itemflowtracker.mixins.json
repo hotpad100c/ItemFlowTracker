@@ -1,0 +1,23 @@
+{
+	"required": true,
+	"package": "ml.mypals.mixin",
+	"compatibilityLevel": "JAVA_25",
+	"mixins": [
+		"AbstractContainerMenuMixin",
+		"BlockDisplayAccessor",
+		"CompoundContainerAccessor",
+		"DisplayAccessor",
+		"HopperBlockEntityMixin",
+		"LivingEntityDropMixin",
+		"ItemDisplayAccessor",
+		"ItemEntityMixin",
+		"ItemStackMixin",
+		"InventoryMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}

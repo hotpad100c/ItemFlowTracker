@@ -12,6 +12,8 @@
 		"ItemDisplayAccessor",
 		"ItemEntityMixin",
 		"ItemStackMixin",
+		"ItemStackTemplateMixin",
+		"ItemUtilsMixin",
 		"InventoryMixin"
 	],
 	"injectors": {

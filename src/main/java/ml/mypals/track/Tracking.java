@@ -48,6 +48,11 @@ public final class Tracking {
 				capacity));
 	}
 
+	public static TrackMark handOver(TrackMark parent, int capacity) {
+		parent.spend(parent.capacity());
+		return register(new TrackMark(parent.rgb(), parent.label(), generation, capacity));
+	}
+
 	public static TrackMark newMark(int rgb, int capacity) {
 		return register(new TrackMark(
 				rgb,
@@ -72,12 +77,25 @@ public final class Tracking {
 
 	@Nullable
 	public static TrackMark getRaw(@Nullable ItemStack stack) {
-		if (stack == null || stack == ItemStack.EMPTY) {
+		return stack == null || stack == ItemStack.EMPTY ? null : markOn((TrackedStack) (Object) stack);
+	}
+
+	@Nullable
+	public static TrackMark markOn(@Nullable TrackedStack holder) {
+		if (holder == null) {
 			return null;
 		}
 
-		TrackMark mark = ((TrackedStack) (Object) stack).itemflowtracker$getMark();
+		TrackMark mark = holder.itemflowtracker$getMark();
 		return mark != null && mark.generation() == generation && !mark.isRetired() ? mark : null;
+	}
+
+	public static void transfer(@Nullable TrackedStack from, @Nullable TrackedStack to) {
+		TrackMark mark = markOn(from);
+
+		if (mark != null && to != null && markOn(to) == null) {
+			to.itemflowtracker$setMark(mark);
+		}
 	}
 
 	public static boolean isMarked(@Nullable ItemStack stack) {

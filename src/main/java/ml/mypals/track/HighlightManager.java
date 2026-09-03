@@ -189,7 +189,7 @@ public final class HighlightManager {
 	@Nullable
 	private static TrackMark markOf(Entity entity) {
 		if (entity instanceof ItemEntity item) {
-			return Tracking.get(item.getItem());
+			return Containers.findMarkInStack(item.getItem());
 		}
 
 		return entity instanceof Container container ? Containers.findMark(container) : null;

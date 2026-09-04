@@ -1,6 +1,6 @@
 package ml.mypals.track;
 
-public final class TrackMark {
+public class TrackMark {
 	private final int rgb;
 	private final String label;
 	private final int generation;

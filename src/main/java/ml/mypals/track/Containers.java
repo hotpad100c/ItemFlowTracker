@@ -13,12 +13,8 @@ import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.component.BundleContents;
 import net.minecraft.world.item.component.ItemContainerContents;
 
-public final class Containers {
-	/** Shulker box inside a shulker box is not vanilla-reachable, but commands can build it. */
+public class Containers {
 	private static final int MAX_NESTING = 4;
-
-	private Containers() {
-	}
 
 	public static void forEachLeaf(@Nullable Container container, Consumer<Container> sink) {
 		if (container == null) {

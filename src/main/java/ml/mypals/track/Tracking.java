@@ -13,14 +13,11 @@ import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
 
 
-public final class Tracking {
+public class Tracking {
 	private static final List<TrackMark> ACTIVE = new ArrayList<>();
 	private static final int MAX_ACTIVE_SESSIONS = 512;
 	private static final int EXHAUSTED_GRACE_TICKS = 40;
 	private static int generation;
-
-	private Tracking() {
-	}
 
 	public static void clearAll() {
 		generation++;

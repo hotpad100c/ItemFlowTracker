@@ -43,7 +43,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
-public final class HighlightManager {
+public class HighlightManager {
 	public static final String DISPLAY_TAG = "itemflowtracker.display";
 
 	private static final int VERIFY_INTERVAL_TICKS = 5;
@@ -56,9 +56,6 @@ public final class HighlightManager {
 	private static final Map<ResourceKey<Level>, Map<Integer, Highlight>> ENTITIES = new HashMap<>();
 
 	private static final Set<UUID> OWNED = new HashSet<>();
-
-	private HighlightManager() {
-	}
 
 	private static final class Highlight {
 		@Nullable
@@ -171,8 +168,6 @@ public final class HighlightManager {
 				continue;
 			}
 
-			// A discarded vehicle only ejects its passengers, so a lost ride means the display is
-			// floating free and has to be rebuilt on whatever entity survived.
 			boolean stale = highlight.display == null
 					|| highlight.display.isRemoved()
 					|| highlight.display.getVehicle() != entity

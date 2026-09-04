@@ -77,6 +77,10 @@ public class Tracking {
 		return stack == null || stack == ItemStack.EMPTY ? null : markOn((TrackedStack) (Object) stack);
 	}
 
+	public static boolean isLive(@Nullable TrackMark mark) {
+		return mark != null && mark.generation() == generation && !mark.isRetired();
+	}
+
 	@Nullable
 	public static TrackMark markOn(@Nullable TrackedStack holder) {
 		if (holder == null) {
@@ -84,7 +88,7 @@ public class Tracking {
 		}
 
 		TrackMark mark = holder.itemflowtracker$getMark();
-		return mark != null && mark.generation() == generation && !mark.isRetired() ? mark : null;
+		return isLive(mark) ? mark : null;
 	}
 
 	public static void transfer(@Nullable TrackedStack from, @Nullable TrackedStack to) {

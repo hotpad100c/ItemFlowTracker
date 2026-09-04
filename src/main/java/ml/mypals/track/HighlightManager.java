@@ -62,6 +62,10 @@ public class HighlightManager {
 		TrackMark mark;
 		@Nullable
 		Display display;
+		@Nullable
+		TrackMark blockMark;
+		@Nullable
+		Block blockMarkOwner;
 	}
 
 	public static void onEnterContainer(@Nullable Container container) {
@@ -83,6 +87,32 @@ public class HighlightManager {
 	public static void watchBlock(ServerLevel level, BlockPos pos) {
 		BLOCKS.computeIfAbsent(level.dimension(), key -> new HashMap<>())
 				.computeIfAbsent(pos.immutable(), key -> new Highlight());
+	}
+
+	public static void markBlock(ServerLevel level, BlockPos pos, TrackMark mark) {
+		Highlight highlight = BLOCKS.computeIfAbsent(level.dimension(), key -> new HashMap<>())
+				.computeIfAbsent(pos.immutable(), key -> new Highlight());
+		highlight.blockMark = mark;
+		highlight.blockMarkOwner = level.getBlockState(pos).getBlock();
+	}
+
+	public static void takeBlockMark(Level level, BlockPos pos, ItemStack stack) {
+		if (!(level instanceof ServerLevel serverLevel) || stack.isEmpty()) {
+			return;
+		}
+
+		Map<BlockPos, Highlight> tracked = BLOCKS.get(serverLevel.dimension());
+		Highlight highlight = tracked == null ? null : tracked.get(pos);
+
+		if (highlight == null || !Tracking.isLive(highlight.blockMark) || highlight.blockMarkOwner == null) {
+			return;
+		}
+
+		if (stack.getItem() == highlight.blockMarkOwner.asItem()) {
+			Tracking.setIfAbsent(stack, highlight.blockMark);
+			highlight.blockMark = null;
+			highlight.blockMarkOwner = null;
+		}
 	}
 
 	public static void watchEntity(Entity entity) {
@@ -118,9 +148,11 @@ public class HighlightManager {
 				continue;
 			}
 
-			TrackMark mark = level.getBlockEntity(pos) instanceof Container container
-					? Containers.findMark(container)
-					: null;
+			TrackMark mark = blockMarkOf(level, pos, highlight);
+
+			if (mark == null && level.getBlockEntity(pos) instanceof Container container) {
+				mark = Containers.findMark(container);
+			}
 
 			if (mark == null) {
 				removeDisplay(highlight);
@@ -179,6 +211,21 @@ public class HighlightManager {
 				highlight.display = spawnEntityHighlight(level, entity, mark);
 			}
 		}
+	}
+
+	@Nullable
+	private static TrackMark blockMarkOf(ServerLevel level, BlockPos pos, Highlight highlight) {
+		if (highlight.blockMark == null) {
+			return null;
+		}
+
+		if (!Tracking.isLive(highlight.blockMark) || level.getBlockState(pos).getBlock() != highlight.blockMarkOwner) {
+			highlight.blockMark = null;
+			highlight.blockMarkOwner = null;
+			return null;
+		}
+
+		return highlight.blockMark;
 	}
 
 	@Nullable

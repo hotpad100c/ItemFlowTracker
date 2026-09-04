@@ -4,6 +4,8 @@
 	"compatibilityLevel": "JAVA_25",
 	"mixins": [
 		"AbstractContainerMenuMixin",
+		"BlockItemMixin",
+		"BlockMixin",
 		"BlockDisplayAccessor",
 		"CompoundContainerAccessor",
 		"DisplayAccessor",

@@ -110,6 +110,29 @@ public class HighlightManager {
 
 		if (stack.getItem() == highlight.blockMarkOwner.asItem()) {
 			Tracking.setIfAbsent(stack, highlight.blockMark);
+		}
+	}
+
+	@Nullable
+	public static TrackMark peekBlockMark(Level level, BlockPos pos) {
+		if (!(level instanceof ServerLevel serverLevel)) {
+			return null;
+		}
+
+		Map<BlockPos, Highlight> tracked = BLOCKS.get(serverLevel.dimension());
+		Highlight highlight = tracked == null ? null : tracked.get(pos);
+		return highlight != null && Tracking.isLive(highlight.blockMark) ? highlight.blockMark : null;
+	}
+
+	public static void clearBlockMark(Level level, BlockPos pos) {
+		if (!(level instanceof ServerLevel serverLevel)) {
+			return;
+		}
+
+		Map<BlockPos, Highlight> tracked = BLOCKS.get(serverLevel.dimension());
+		Highlight highlight = tracked == null ? null : tracked.get(pos);
+
+		if (highlight != null) {
 			highlight.blockMark = null;
 			highlight.blockMarkOwner = null;
 		}

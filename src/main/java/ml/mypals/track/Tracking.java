@@ -47,6 +47,10 @@ public class Tracking {
 
 	public static TrackMark handOver(TrackMark parent, int capacity) {
 		parent.spend(parent.capacity());
+		return derive(parent, capacity);
+	}
+
+	public static TrackMark derive(TrackMark parent, int capacity) {
 		return register(new TrackMark(parent.rgb(), parent.label(), generation, capacity));
 	}
 

@@ -5,8 +5,11 @@ import java.util.function.IntFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 
@@ -45,6 +48,7 @@ public class ItemFlowTracker implements ModInitializer {
 		ServerTickEvents.END_LEVEL_TICK.register(HighlightManager::tick);
 
 		ServerEntityEvents.ENTITY_LOAD.register((entity, level) -> HighlightManager.onEntityLoad(entity));
+		ServerEntityEvents.ENTITY_UNLOAD.register((entity, level) -> HighlightManager.onEntityUnload(entity));
 
 		ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
 			HighlightManager.clearAll(server);
@@ -59,25 +63,18 @@ public class ItemFlowTracker implements ModInitializer {
 		LiteralArgumentBuilder<CommandSourceStack> mark = Commands.literal("mark");
 
 		for (DyeColor color : DyeColor.values()) {
-			mark.then(Commands.literal(color.getName())
-					.executes(context -> markHeldItem(context.getSource(), dyeSession(color)))
-					.then(Commands.argument("targets", EntityArgument.entities())
-							.executes(context -> markEntities(
-									context.getSource(),
-									dyeSession(color),
-									EntityArgument.getEntities(context, "targets")))));
+			LiteralArgumentBuilder<CommandSourceStack> node = Commands.literal(color.getName());
+			addMarkVariants(node, (context, pathInterval) -> capacity -> Tracking.newMark(color, capacity, pathInterval));
+			mark.then(node);
 		}
 
 		mark.then(Commands.literal("hex")
-				.then(Commands.argument("rgb", StringArgumentType.string())
-						.executes(context -> markHeldItem(
-								context.getSource(),
-								hexSession(StringArgumentType.getString(context, "rgb"))))
-						.then(Commands.argument("targets", EntityArgument.entities())
-								.executes(context -> markEntities(
-										context.getSource(),
-										hexSession(StringArgumentType.getString(context, "rgb")),
-										EntityArgument.getEntities(context, "targets"))))));
+				.then(addMarkVariants(
+						Commands.argument("rgb", StringArgumentType.string()),
+						(context, pathInterval) -> {
+							int rgb = parseHex(StringArgumentType.getString(context, "rgb"));
+							return capacity -> Tracking.newMark(rgb, capacity, pathInterval);
+						})));
 
 		dispatcher.register(Commands.literal("ift")
 				.then(mark)
@@ -114,11 +111,34 @@ public class ItemFlowTracker implements ModInitializer {
 						})));
 	}
 
-	private static IntFunction<TrackMark> dyeSession(DyeColor color) {
-		return capacity -> Tracking.newMark(color, capacity);
+	@FunctionalInterface
+	private interface SessionFactory {
+		IntFunction<TrackMark> create(CommandContext<CommandSourceStack> context, int pathInterval) throws CommandSyntaxException;
 	}
 
-	private static IntFunction<TrackMark> hexSession(String raw) throws CommandSyntaxException {
+	private static <T extends ArgumentBuilder<CommandSourceStack, T>> T addMarkVariants(T node, SessionFactory factory) {
+		node.executes(context -> markHeldItem(context.getSource(), factory.create(context, 0)));
+
+		node.then(Commands.argument("track_path", IntegerArgumentType.integer(0))
+				.executes(context -> markHeldItem(
+						context.getSource(),
+						factory.create(context, IntegerArgumentType.getInteger(context, "track_path")))));
+
+		node.then(Commands.argument("targets", EntityArgument.entities())
+				.executes(context -> markEntities(
+						context.getSource(),
+						factory.create(context, 0),
+						EntityArgument.getEntities(context, "targets")))
+				.then(Commands.argument("track_path", IntegerArgumentType.integer(0))
+						.executes(context -> markEntities(
+								context.getSource(),
+								factory.create(context, IntegerArgumentType.getInteger(context, "track_path")),
+								EntityArgument.getEntities(context, "targets")))));
+
+		return node;
+	}
+
+	private static int parseHex(String raw) throws CommandSyntaxException {
 		String digits = raw.startsWith("#") ? raw.substring(1)
 				: raw.regionMatches(true, 0, "0x", 0, 2) ? raw.substring(2)
 				: raw;
@@ -127,8 +147,7 @@ public class ItemFlowTracker implements ModInitializer {
 			throw BAD_HEX.create(raw);
 		}
 
-		int rgb = Integer.parseInt(digits, 16);
-		return capacity -> Tracking.newMark(rgb, capacity);
+		return Integer.parseInt(digits, 16);
 	}
 
 	private static int markHeldItem(CommandSourceStack source, IntFunction<TrackMark> session) throws CommandSyntaxException {

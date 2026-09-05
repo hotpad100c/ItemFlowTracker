@@ -19,6 +19,7 @@ import ml.mypals.mixin.BlockDisplayAccessor;
 import ml.mypals.mixin.DisplayAccessor;
 import ml.mypals.mixin.ItemDisplayAccessor;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.GlobalPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -56,6 +57,16 @@ public class HighlightManager {
 	private static final Map<ResourceKey<Level>, Map<Integer, Highlight>> ENTITIES = new HashMap<>();
 
 	private static final Set<UUID> OWNED = new HashSet<>();
+
+	private static final Block PATH_MARKER_BLOCK = Blocks.STAINED_GLASS.black();
+	private static final float PATH_MARKER_SIZE = 0.2F;
+
+	private static final Map<TrackMark, Trail> TRAILS = new HashMap<>();
+
+	private static final class Trail {
+		final Set<GlobalPos> stamped = new HashSet<>();
+		final List<Display> markers = new ArrayList<>();
+	}
 
 	private static final class Highlight {
 		@Nullable
@@ -144,12 +155,80 @@ public class HighlightManager {
 	}
 
 	public static void tick(ServerLevel level) {
+		tickPath(level);
+
 		if (level.getGameTime() % VERIFY_INTERVAL_TICKS != 0) {
 			return;
 		}
 
 		tickBlocks(level);
 		tickEntities(level);
+	}
+
+	private static void tickPath(ServerLevel level) {
+		long time = level.getGameTime();
+		Map<Integer, Highlight> entities = ENTITIES.get(level.dimension());
+
+		if (entities != null) {
+			for (Map.Entry<Integer, Highlight> entry : entities.entrySet()) {
+				TrackMark mark = entry.getValue().mark;
+
+				if (wantsStamp(mark, time)) {
+					Entity entity = level.getEntity(entry.getKey());
+
+					if (entity != null && !entity.isRemoved()) {
+						stamp(level, mark, entity.position());
+					}
+				}
+			}
+		}
+
+		Map<BlockPos, Highlight> blocks = BLOCKS.get(level.dimension());
+
+		if (blocks != null) {
+			for (Map.Entry<BlockPos, Highlight> entry : blocks.entrySet()) {
+				TrackMark mark = entry.getValue().mark;
+
+				if (wantsStamp(mark, time) && level.isLoaded(entry.getKey())) {
+					stamp(level, mark, Vec3.atCenterOf(entry.getKey()));
+				}
+			}
+		}
+	}
+
+	private static boolean wantsStamp(@Nullable TrackMark mark, long time) {
+		return mark != null
+				&& mark.pathInterval() > 0
+				&& Tracking.isLive(mark)
+				&& time % mark.pathInterval() == 0;
+	}
+
+
+	private static void stamp(ServerLevel level, TrackMark mark, Vec3 at) {
+		GlobalPos key = GlobalPos.of(level.dimension(), BlockPos.containing(at));
+		Trail trail = TRAILS.computeIfAbsent(mark, ignored -> new Trail());
+
+		if (!trail.stamped.add(key)) {
+			return;
+		}
+
+		Display.BlockDisplay display = new Display.BlockDisplay(EntityTypes.BLOCK_DISPLAY, level);
+		display.setPos(at.x, at.y, at.z);
+		((BlockDisplayAccessor) display).itemflowtracker$setBlockState(PATH_MARKER_BLOCK.defaultBlockState());
+		prepare(display, mark);
+
+		float half = PATH_MARKER_SIZE / 2.0F;
+		((DisplayAccessor) display).itemflowtracker$setTransformation(new Transformation(
+				new Vector3f(-half, -half, -half),
+				new Quaternionf(),
+				new Vector3f(PATH_MARKER_SIZE, PATH_MARKER_SIZE, PATH_MARKER_SIZE),
+				new Quaternionf()));
+
+		if (spawn(level, display)) {
+			trail.markers.add(display);
+		} else {
+			trail.stamped.remove(key);
+		}
 	}
 
 	private static void tickBlocks(ServerLevel level) {
@@ -401,6 +480,12 @@ public class HighlightManager {
 		}
 	}
 
+	public static void onEntityUnload(Entity entity) {
+		if (entity.entityTags().contains(DISPLAY_TAG)) {
+			OWNED.remove(entity.getUUID());
+		}
+	}
+
 	public static void onEntityLoad(Entity entity) {
 		if (entity.entityTags().contains(DISPLAY_TAG) && !OWNED.contains(entity.getUUID())) {
 			entity.discard();
@@ -420,8 +505,13 @@ public class HighlightManager {
 			}
 		}
 
+		for (Trail trail : TRAILS.values()) {
+			trail.markers.forEach(HighlightManager::discard);
+		}
+
 		BLOCKS.clear();
 		ENTITIES.clear();
+		TRAILS.clear();
 		OWNED.clear();
 	}
 

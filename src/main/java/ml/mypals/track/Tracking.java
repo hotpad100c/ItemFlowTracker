@@ -38,11 +38,16 @@ public class Tracking {
 	}
 
 	public static TrackMark newMark(DyeColor color, int capacity) {
+		return newMark(color, capacity, 0);
+	}
+
+	public static TrackMark newMark(DyeColor color, int capacity, int pathInterval) {
 		return register(new TrackMark(
 				color.getTextureDiffuseColor(),
 				color.getName(),
 				generation,
-				capacity));
+				capacity,
+				pathInterval));
 	}
 
 	public static TrackMark handOver(TrackMark parent, int capacity) {
@@ -51,15 +56,20 @@ public class Tracking {
 	}
 
 	public static TrackMark derive(TrackMark parent, int capacity) {
-		return register(new TrackMark(parent.rgb(), parent.label(), generation, capacity));
+		return register(new TrackMark(parent.rgb(), parent.label(), generation, capacity, parent.pathInterval()));
 	}
 
 	public static TrackMark newMark(int rgb, int capacity) {
+		return newMark(rgb, capacity, 0);
+	}
+
+	public static TrackMark newMark(int rgb, int capacity, int pathInterval) {
 		return register(new TrackMark(
 				rgb,
 				String.format("#%06X", rgb & 0xFFFFFF),
 				generation,
-				capacity));
+				capacity,
+				pathInterval));
 	}
 
 	private static TrackMark register(TrackMark mark) {

@@ -16,7 +16,7 @@
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"ml.mypals.ItemFlowTracker"
+			"ml.mypals.ift.ItemFlowTracker"
 		]
 	},
 	"mixins": [

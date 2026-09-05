@@ -1,4 +1,4 @@
-package ml.mypals.track;
+package ml.mypals.ift.track;
 
 public class TrackMark {
 	private final int rgb;

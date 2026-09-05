@@ -1,11 +1,11 @@
-package ml.mypals.mixin;
+package ml.mypals.ift.mixin.entity;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import ml.mypals.track.Tracking;
+import ml.mypals.ift.track.Tracking;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
@@ -18,7 +18,7 @@ public abstract class LivingEntityDropMixin {
 			method = "drop(Lnet/minecraft/world/item/ItemStack;ZZ)Lnet/minecraft/world/entity/item/ItemEntity;",
 			at = @At("HEAD")
 	)
-	private void itemflowtracker$markThrownItem(ItemStack stack, boolean dropAround, boolean includeThrower, CallbackInfoReturnable<ItemEntity> cir) {
+	private void itemflowtracker$markThrownItem(ItemStack stack, boolean randomly, boolean thrownFromHand, CallbackInfoReturnable<ItemEntity> cir) {
 		if (!(((Object) this) instanceof Player self)) {return;}
 
 		if (self.level().isClientSide() || stack.isEmpty() || !self.isAlive()) {
@@ -32,7 +32,7 @@ public abstract class LivingEntityDropMixin {
 		}
 
 		DyeColor dye = Tracking.dyeOf(offhand);
-
+		//TODO 包裹一个地毯规则来决定是否启用快捷标记
 		if (dye != null && Tracking.get(stack) == null) {
 			Tracking.set(stack, Tracking.newMark(dye, stack.getCount()));
 		}

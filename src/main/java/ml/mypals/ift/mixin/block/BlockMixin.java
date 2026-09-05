@@ -1,11 +1,11 @@
-package ml.mypals.mixin;
+package ml.mypals.ift.mixin.block;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import ml.mypals.track.HighlightManager;
+import ml.mypals.ift.track.HighlightManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;

@@ -1,4 +1,4 @@
-package ml.mypals;
+package ml.mypals.ift;
 
 import java.util.function.IntFunction;
 
@@ -13,9 +13,9 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 
-import ml.mypals.track.HighlightManager;
-import ml.mypals.track.TrackMark;
-import ml.mypals.track.Tracking;
+import ml.mypals.ift.track.HighlightManager;
+import ml.mypals.ift.track.TrackMark;
+import ml.mypals.ift.track.Tracking;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
@@ -44,6 +44,11 @@ public class ItemFlowTracker implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
+		register();
+	}
+	//TODO 所有的注册项！
+	private static void register(){
+
 		ServerTickEvents.END_SERVER_TICK.register(server -> Tracking.sweepExhaustedSessions());
 		ServerTickEvents.END_LEVEL_TICK.register(HighlightManager::tick);
 
@@ -58,6 +63,10 @@ public class ItemFlowTracker implements ModInitializer {
 		CommandRegistrationCallback.EVENT.register((dispatcher, registry, environment) -> registerCommands(dispatcher));
 
 	}
+	/**
+	 * /ift mark <color>         <target_item>               <track_path>          = 标记手持的/指定的物品
+	 *            颜色    附近的目标物品（其它实体无效；可选）    路径追踪间隔（可选）
+	 * */
 
 	private static void registerCommands(com.mojang.brigadier.CommandDispatcher<CommandSourceStack> dispatcher) {
 		LiteralArgumentBuilder<CommandSourceStack> mark = Commands.literal("mark");

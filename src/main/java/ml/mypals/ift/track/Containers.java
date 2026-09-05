@@ -1,10 +1,10 @@
-package ml.mypals.track;
+package ml.mypals.ift.track;
 
 import java.util.function.Consumer;
 
 import org.jetbrains.annotations.Nullable;
 
-import ml.mypals.mixin.CompoundContainerAccessor;
+import ml.mypals.ift.mixin.accessors.CompoundContainerAccessor;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.CompoundContainer;
 import net.minecraft.world.Container;

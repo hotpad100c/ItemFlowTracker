@@ -1,13 +1,13 @@
-package ml.mypals.mixin;
+package ml.mypals.ift.mixin.Inventory;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import ml.mypals.track.HighlightManager;
-import ml.mypals.track.TrackMark;
-import ml.mypals.track.Tracking;
+import ml.mypals.ift.track.HighlightManager;
+import ml.mypals.ift.track.TrackMark;
+import ml.mypals.ift.track.Tracking;
 import net.minecraft.core.Direction;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;

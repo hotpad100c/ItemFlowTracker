@@ -1,4 +1,4 @@
-package ml.mypals.mixin;
+package ml.mypals.ift.mixin.item;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -7,8 +7,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
-import ml.mypals.track.TrackMark;
-import ml.mypals.track.Tracking;
+import ml.mypals.ift.track.TrackMark;
+import ml.mypals.ift.track.Tracking;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.ItemUtils;

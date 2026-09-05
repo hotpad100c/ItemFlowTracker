@@ -1,10 +1,8 @@
-package ml.mypals.track;
+package ml.mypals.ift.track;
 
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -15,7 +13,7 @@ import net.minecraft.world.item.ItemStack;
 
 public class Tracking {
 	private static final List<TrackMark> ACTIVE = new ArrayList<>();
-	private static final int MAX_ACTIVE_SESSIONS = 512;
+	private static final int MAX_ACTIVE_SESSIONS = 512; 		//TODO 包裹一个地毯规则来决定最大的追踪数量
 	private static final int EXHAUSTED_GRACE_TICKS = 40;
 	private static int generation;
 
@@ -59,10 +57,6 @@ public class Tracking {
 		return register(new TrackMark(parent.rgb(), parent.label(), generation, capacity, parent.pathInterval()));
 	}
 
-	public static TrackMark newMark(int rgb, int capacity) {
-		return newMark(rgb, capacity, 0);
-	}
-
 	public static TrackMark newMark(int rgb, int capacity, int pathInterval) {
 		return register(new TrackMark(
 				rgb,
@@ -73,8 +67,11 @@ public class Tracking {
 	}
 
 	private static TrackMark register(TrackMark mark) {
+
+		//TODO 包裹一个地毯规则来决定是否开启功能，这里因该可以做总控制
+
 		if (ACTIVE.size() >= MAX_ACTIVE_SESSIONS) {
-			ACTIVE.remove(0).retire();
+			ACTIVE.removeFirst().retire();
 		}
 
 		ACTIVE.add(mark);

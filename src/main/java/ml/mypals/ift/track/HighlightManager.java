@@ -1,4 +1,4 @@
-package ml.mypals.track;
+package ml.mypals.ift.track;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,9 +15,9 @@ import org.joml.Vector3f;
 
 import com.mojang.math.Transformation;
 
-import ml.mypals.mixin.BlockDisplayAccessor;
-import ml.mypals.mixin.DisplayAccessor;
-import ml.mypals.mixin.ItemDisplayAccessor;
+import ml.mypals.ift.mixin.accessors.BlockDisplayAccessor;
+import ml.mypals.ift.mixin.accessors.DisplayAccessor;
+import ml.mypals.ift.mixin.accessors.ItemDisplayAccessor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.Direction;

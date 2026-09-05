@@ -1,4 +1,4 @@
-package ml.mypals.mixin;
+package ml.mypals.ift.mixin.accessors;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;

@@ -16,21 +16,29 @@ import net.minecraft.world.item.ItemUtils;
 
 @Mixin(ItemUtils.class)
 public abstract class ItemUtilsMixin {
-	@ModifyVariable(method = "onContainerDestroyed", at = @At("HEAD"), argsOnly = true, name = "contents")
-	private static Stream<ItemStack> itemflowtracker$markSpilledContents(Stream<ItemStack> contents, ItemEntity source) {
-		TrackMark container = Tracking.get(source.getItem());
+	/**
+	 * ordinal 0 = the first argument of the handler's own type, which is the only Stream this method
+	 * takes. Addressing it by name needs the target's debug info; by index needs the LVT slot. The
+	 * handler then repeats the target's <em>full</em> argument list after the modified value -
+	 * capturing only part of it is what made this fail to bind.
+	 */
+	@ModifyVariable(method = "onContainerDestroyed", at = @At("HEAD"), argsOnly = true, ordinal = 0)
+	private static Stream<ItemStack> itemflowtracker$markSpilledContents(
+			Stream<ItemStack> value, ItemEntity container, Stream<ItemStack> contents) {
+		TrackMark source = Tracking.get(container.getItem());
 
-		if (container == null) {
-			return contents;
+		if (source == null) {
+			return value;
 		}
-		List<ItemStack> spilled = contents.toList();
+
+		List<ItemStack> spilled = value.toList();
 		int total = spilled.stream().mapToInt(ItemStack::getCount).sum();
 
 		if (total <= 0) {
 			return spilled.stream();
 		}
 
-		TrackMark mark = Tracking.handOver(container, total);
+		TrackMark mark = Tracking.handOver(source, total);
 		spilled.forEach(stack -> Tracking.setIfAbsent(stack, mark));
 		return spilled.stream();
 	}

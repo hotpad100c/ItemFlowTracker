@@ -63,6 +63,12 @@ public class HighlightManager {
 
 	private static final double PATH_MAX_SEGMENT = 8.0;
 
+	/**
+	 * Below this, the item has not really moved and no segment is drawn - but the last sample is kept
+	 * so slow drift still accumulates into one segment instead of being thrown away every tick.
+	 */
+	private static final double PATH_MIN_SEGMENT = 0.05;
+
 	private static final float PATH_CULLING_SIZE = 64.0F;
 
 	private static final Map<TrackMark, Trail> TRAILS = new HashMap<>();
@@ -164,12 +170,22 @@ public class HighlightManager {
 	public static void tick(ServerLevel level) {
 		tickPath(level);
 
-		if (level.getGameTime() % VERIFY_INTERVAL_TICKS != 0) {
+		if (level.getGameTime() % verifyInterval() != 0) {
 			return;
 		}
 
 		tickBlocks(level);
 		tickEntities(level);
+	}
+
+	/**
+	 * The sweep normally runs every {@link #VERIFY_INTERVAL_TICKS}, but a trail cannot start being
+	 * drawn for something until the sweep has given its entry a mark. A session asking for samples
+	 * more often than that drags the sweep down to its own interval so the trail starts on time.
+	 */
+	private static int verifyInterval() {
+		int fastest = Tracking.fastestPathInterval();
+		return fastest > 0 ? Math.min(VERIFY_INTERVAL_TICKS, fastest) : VERIFY_INTERVAL_TICKS;
 	}
 
 	private static void tickPath(ServerLevel level) {
@@ -220,14 +236,17 @@ public class HighlightManager {
 		Vec3 previous = trail.last;
 		boolean sameLevel = level.dimension().equals(trail.lastDimension);
 
-		if (previous != null && sameLevel && BlockPos.containing(previous).equals(BlockPos.containing(at))) {
-			return;
-		}
-
 		if (previous != null && sameLevel) {
 			double distance = previous.distanceTo(at);
 
-			if (distance > 1.0E-4 && distance <= PATH_MAX_SEGMENT) {
+			// Used to skip whenever the sample landed in the same block, which quietly made the
+			// block grid the real resolution of the trail and left pathInterval doing nothing for
+			// anything moving slower than a block per sample.
+			if (distance < PATH_MIN_SEGMENT) {
+				return;
+			}
+
+			if (distance <= PATH_MAX_SEGMENT) {
 				spawnSegment(level, mark, previous, at, trail);
 			}
 		}

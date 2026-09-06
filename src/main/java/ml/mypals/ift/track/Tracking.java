@@ -17,6 +17,9 @@ public class Tracking {
 	private static final int EXHAUSTED_GRACE_TICKS = 40;
 	private static int generation;
 
+	/** Smallest pathInterval among live sessions, 0 when nothing is drawing a trail. */
+	private static int fastestPathInterval;
+
 	public static void clearAll() {
 		generation++;
 		ACTIVE.clear();
@@ -24,6 +27,7 @@ public class Tracking {
 
 	public static void sweepExhaustedSessions() {
 		Iterator<TrackMark> it = ACTIVE.iterator();
+		int fastest = 0;
 
 		while (it.hasNext()) {
 			TrackMark mark = it.next();
@@ -31,8 +35,18 @@ public class Tracking {
 			if (mark.generation() != generation || mark.tickExhausted() > EXHAUSTED_GRACE_TICKS) {
 				mark.retire();
 				it.remove();
+				continue;
+			}
+
+			int path = mark.pathInterval();
+
+			if (path > 0 && (fastest == 0 || path < fastest)) {
+				fastest = path;
 			}
 		}
+
+		// Piggybacks on the sweep, which already walks the list every tick.
+		fastestPathInterval = fastest;
 	}
 
 	public static TrackMark newMark(DyeColor color, int capacity) {
@@ -161,6 +175,10 @@ public class Tracking {
 		if (mark != null) {
 			mark.refund(stack.getCount());
 		}
+	}
+
+	public static int fastestPathInterval() {
+		return fastestPathInterval;
 	}
 
 	public static List<TrackMark> activeSessions() {

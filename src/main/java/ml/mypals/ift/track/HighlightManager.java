@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import net.minecraft.world.entity.EntityType;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -27,7 +28,6 @@ import net.minecraft.util.Brightness;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
@@ -49,7 +49,7 @@ public class HighlightManager {
 	private static final int VERIFY_INTERVAL_TICKS = 5;
 	private static final float OUTLINE_SCALE = 1.02F;
 
-	private static final Block ENTITY_OUTLINE_BLOCK = Blocks.STAINED_GLASS.white();
+	private static final Block ENTITY_OUTLINE_BLOCK = Blocks.WHITE_STAINED_GLASS;
 	private static final double ENTITY_OUTLINE_PADDING = 0.02;
 
 	private static final Map<ResourceKey<Level>, Map<BlockPos, Highlight>> BLOCKS = new HashMap<>();
@@ -57,7 +57,7 @@ public class HighlightManager {
 
 	private static final Set<UUID> OWNED = new HashSet<>();
 
-	private static final Block PATH_MARKER_BLOCK = Blocks.STAINED_GLASS.black();
+	private static final Block PATH_MARKER_BLOCK = Blocks.BLACK_STAINED_GLASS;
 
 	private static final float PATH_LINE_THICKNESS = 0.06F;
 
@@ -246,7 +246,7 @@ public class HighlightManager {
 		Vector3f offset = rotation.transform(
 				new Vector3f(-PATH_LINE_THICKNESS / 2.0F, -PATH_LINE_THICKNESS / 2.0F, 0.0F));
 
-		Display.BlockDisplay display = new Display.BlockDisplay(EntityTypes.BLOCK_DISPLAY, level);
+		Display.BlockDisplay display = new Display.BlockDisplay(EntityType.BLOCK_DISPLAY, level);
 		display.setPos(start.x, start.y, start.z);
 		((BlockDisplayAccessor) display).itemflowtracker$setBlockState(PATH_MARKER_BLOCK.defaultBlockState());
 		prepare(display, mark);
@@ -376,7 +376,7 @@ public class HighlightManager {
 
 	@Nullable
 	private static Display spawnEntityHighlight(ServerLevel level, Entity vehicle, TrackMark mark) {
-		Display.BlockDisplay display = new Display.BlockDisplay(EntityTypes.BLOCK_DISPLAY, level);
+		Display.BlockDisplay display = new Display.BlockDisplay(EntityType.BLOCK_DISPLAY, level);
 		display.setPos(vehicle.getX(), vehicle.getY(), vehicle.getZ());
 		((BlockDisplayAccessor) display).itemflowtracker$setBlockState(ENTITY_OUTLINE_BLOCK.defaultBlockState());
 		prepare(display, mark);
@@ -422,7 +422,7 @@ public class HighlightManager {
 	}
 
 	private static Display createBlockDisplay(ServerLevel level, BlockPos pos, BlockState state) {
-		Display.BlockDisplay display = new Display.BlockDisplay(EntityTypes.BLOCK_DISPLAY, level);
+		Display.BlockDisplay display = new Display.BlockDisplay(EntityType.BLOCK_DISPLAY, level);
 		display.setPos(pos.getX(), pos.getY(), pos.getZ());
 		((BlockDisplayAccessor) display).itemflowtracker$setBlockState(state);
 
@@ -444,7 +444,7 @@ public class HighlightManager {
 			return null;
 		}
 
-		Display.ItemDisplay display = new Display.ItemDisplay(EntityTypes.ITEM_DISPLAY, level);
+		Display.ItemDisplay display = new Display.ItemDisplay(EntityType.ITEM_DISPLAY, level);
 		display.setPos(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
 
 		ItemDisplayAccessor itemAccessor = (ItemDisplayAccessor) display;

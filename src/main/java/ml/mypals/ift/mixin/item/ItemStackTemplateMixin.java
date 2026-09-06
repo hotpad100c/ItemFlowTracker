@@ -30,7 +30,7 @@ public abstract class ItemStackTemplateMixin implements TrackedStack {
 		this.itemflowtracker$mark = mark;
 	}
 
-	@Inject(method = "fromStack", at = @At("RETURN"))
+	@Inject(method = "fromNonEmptyStack", at = @At("RETURN"))
 	private static void itemflowtracker$fromStack(ItemStack itemStack, CallbackInfoReturnable<ItemStackTemplate> cir) {
 		Tracking.transfer((TrackedStack) (Object) itemStack, (TrackedStack) (Object) cir.getReturnValue());
 	}

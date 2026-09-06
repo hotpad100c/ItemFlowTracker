@@ -75,10 +75,6 @@ public class HighlightManager {
 
 	private static final class Trail {
 		final List<Display> markers = new ArrayList<>();
-		@Nullable
-		ResourceKey<Level> lastDimension;
-		@Nullable
-		Vec3 last;
 	}
 
 	private static final class Highlight {
@@ -90,6 +86,9 @@ public class HighlightManager {
 		TrackMark blockMark;
 		@Nullable
 		Block blockMarkOwner;
+
+		@Nullable
+		Vec3 trailLast;
 	}
 
 	public static void onEnterContainer(@Nullable Container container) {
@@ -178,11 +177,7 @@ public class HighlightManager {
 		tickEntities(level);
 	}
 
-	/**
-	 * The sweep normally runs every {@link #VERIFY_INTERVAL_TICKS}, but a trail cannot start being
-	 * drawn for something until the sweep has given its entry a mark. A session asking for samples
-	 * more often than that drags the sweep down to its own interval so the trail starts on time.
-	 */
+
 	private static int verifyInterval() {
 		int fastest = Tracking.fastestPathInterval();
 		return fastest > 0 ? Math.min(VERIFY_INTERVAL_TICKS, fastest) : VERIFY_INTERVAL_TICKS;
@@ -190,20 +185,17 @@ public class HighlightManager {
 
 	private static void tickPath(ServerLevel level) {
 		long time = level.getGameTime();
-
-		Set<TrackMark> sampled = new HashSet<>();
 		Map<Integer, Highlight> entities = ENTITIES.get(level.dimension());
 
 		if (entities != null) {
 			for (Map.Entry<Integer, Highlight> entry : entities.entrySet()) {
-				TrackMark mark = entry.getValue().mark;
+				Highlight highlight = entry.getValue();
 
-				if (wantsStamp(mark, time) && !sampled.contains(mark)) {
+				if (wantsStamp(highlight.mark, time)) {
 					Entity entity = level.getEntity(entry.getKey());
 
 					if (entity != null && !entity.isRemoved()) {
-						sampled.add(mark);
-						stamp(level, mark, entity.position());
+						stamp(level, highlight, entity.position());
 					}
 				}
 			}
@@ -213,11 +205,10 @@ public class HighlightManager {
 
 		if (blocks != null) {
 			for (Map.Entry<BlockPos, Highlight> entry : blocks.entrySet()) {
-				TrackMark mark = entry.getValue().mark;
+				Highlight highlight = entry.getValue();
 
-				if (wantsStamp(mark, time) && !sampled.contains(mark) && level.isLoaded(entry.getKey())) {
-					sampled.add(mark);
-					stamp(level, mark, Vec3.atCenterOf(entry.getKey()));
+				if (wantsStamp(highlight.mark, time) && level.isLoaded(entry.getKey())) {
+					stamp(level, highlight, Vec3.atCenterOf(entry.getKey()));
 				}
 			}
 		}
@@ -231,28 +222,66 @@ public class HighlightManager {
 	}
 
 
-	private static void stamp(ServerLevel level, TrackMark mark, Vec3 at) {
-		Trail trail = TRAILS.computeIfAbsent(mark, ignored -> new Trail());
-		Vec3 previous = trail.last;
-		boolean sameLevel = level.dimension().equals(trail.lastDimension);
+	private static void stamp(ServerLevel level, Highlight highlight, Vec3 at) {
+		TrackMark mark = highlight.mark;
 
-		if (previous != null && sameLevel) {
+		if (mark == null) {
+			return;
+		}
+
+		Vec3 previous = highlight.trailLast != null ? highlight.trailLast : inheritCursor(level, mark, at);
+
+		if (previous != null) {
 			double distance = previous.distanceTo(at);
 
-			// Used to skip whenever the sample landed in the same block, which quietly made the
-			// block grid the real resolution of the trail and left pathInterval doing nothing for
-			// anything moving slower than a block per sample.
 			if (distance < PATH_MIN_SEGMENT) {
 				return;
 			}
 
 			if (distance <= PATH_MAX_SEGMENT) {
-				spawnSegment(level, mark, previous, at, trail);
+				spawnSegment(level, mark, previous, at, TRAILS.computeIfAbsent(mark, ignored -> new Trail()));
 			}
 		}
 
-		trail.lastDimension = level.dimension();
-		trail.last = at;
+		highlight.trailLast = at;
+	}
+
+
+	@Nullable
+	private static Vec3 inheritCursor(ServerLevel level, TrackMark mark, Vec3 at) {
+		Vec3 nearest = null;
+		double best = PATH_MAX_SEGMENT;
+
+		for (Highlight other : allHighlights(level)) {
+			if (other.mark != mark || other.trailLast == null) {
+				continue;
+			}
+
+			double distance = other.trailLast.distanceTo(at);
+
+			if (distance <= best) {
+				best = distance;
+				nearest = other.trailLast;
+			}
+		}
+
+		return nearest;
+	}
+
+	private static List<Highlight> allHighlights(ServerLevel level) {
+		List<Highlight> all = new ArrayList<>();
+		Map<Integer, Highlight> entities = ENTITIES.get(level.dimension());
+		Map<BlockPos, Highlight> blocks = BLOCKS.get(level.dimension());
+
+		if (entities != null) {
+			all.addAll(entities.values());
+		}
+
+		if (blocks != null) {
+			all.addAll(blocks.values());
+		}
+
+		return all;
 	}
 
 		private static void spawnSegment(ServerLevel level, TrackMark mark, Vec3 start, Vec3 end, Trail trail) {

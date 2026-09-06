@@ -6,6 +6,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import ml.mypals.ift.track.HighlightManager;
+import ml.mypals.ift.track.Nesting;
 import ml.mypals.ift.track.TrackMark;
 import ml.mypals.ift.track.Tracking;
 import net.minecraft.core.Direction;
@@ -22,6 +23,9 @@ public abstract class HopperBlockEntityMixin {
 	private static void itemflowtracker$movedWholeStack(Container source, Container target, ItemStack stack, int slot, Direction direction, CallbackInfoReturnable<ItemStack> cir) {
 		if (Tracking.getRaw(stack) != null) {
 			Tracking.moved(stack);
+		}
+
+		if (Nesting.carriesMark(stack)) {
 			HighlightManager.onEnterContainer(target);
 		}
 	}
@@ -33,13 +37,14 @@ public abstract class HopperBlockEntityMixin {
 	private static void itemflowtracker$mergedIntoSlot(Container source, Container target, ItemStack stack, int slot, Direction direction, CallbackInfoReturnable<ItemStack> cir) {
 		TrackMark mark = Tracking.getRaw(stack);
 
-		if (mark == null) {
-			return;
+		if (mark != null) {
+			ItemStack destination = target.getItem(slot);
+			int moved = Math.min(stack.getCount(), stack.getMaxStackSize() - destination.getCount());
+			Tracking.arrive(destination, mark, moved);
 		}
 
-		ItemStack destination = target.getItem(slot);
-		int moved = Math.min(stack.getCount(), stack.getMaxStackSize() - destination.getCount());
-		Tracking.arrive(destination, mark, moved);
-		HighlightManager.onEnterContainer(target);
+		if (Nesting.carriesMark(stack)) {
+			HighlightManager.onEnterContainer(target);
+		}
 	}
 }

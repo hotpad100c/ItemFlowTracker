@@ -6,6 +6,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import ml.mypals.ift.track.HighlightManager;
+import ml.mypals.ift.track.Nesting;
+import net.minecraft.world.item.ItemStack;
 import ml.mypals.ift.track.TrackMark;
 import ml.mypals.ift.track.Tracking;
 import net.minecraft.core.BlockPos;
@@ -26,16 +28,19 @@ public abstract class BlockItemMixin {
 			return;
 		}
 
-		TrackMark mark = Tracking.getRaw(context.getItemInHand());
+		ItemStack placed = context.getItemInHand();
+		BlockPos pos = context.getClickedPos();
 
-		if (mark == null) {
+		if (!(level.getBlockEntity(pos) instanceof Container)) {
 			return;
 		}
 
-		BlockPos pos = context.getClickedPos();
+		TrackMark mark = Tracking.getRaw(placed);
 
-		if (level.getBlockEntity(pos) instanceof Container) {
+		if (mark != null) {
 			HighlightManager.markBlock(level, pos, mark);
+		} else if (Nesting.carriesMark(placed)) {
+			HighlightManager.watchBlock(level, pos);
 		}
 	}
 }

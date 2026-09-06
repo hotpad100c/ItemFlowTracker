@@ -88,7 +88,7 @@ public class HighlightManager {
 
 	public static void onEnterContainer(@Nullable Container container) {
 		Containers.forEachLeaf(container, leaf -> {
-			if (Containers.findMark(leaf) == null) {
+			if (Nesting.inContainer(leaf) == null) {
 				return;
 			}
 
@@ -287,7 +287,7 @@ public class HighlightManager {
 			TrackMark mark = blockMarkOf(level, pos, highlight);
 
 			if (mark == null && level.getBlockEntity(pos) instanceof Container container) {
-				mark = Containers.findMark(container);
+				mark = Nesting.inContainer(container);
 			}
 
 			if (mark == null) {
@@ -366,11 +366,7 @@ public class HighlightManager {
 
 	@Nullable
 	private static TrackMark markOf(Entity entity) {
-		if (entity instanceof ItemEntity item) {
-			return Containers.findMarkInStack(item.getItem());
-		}
-
-		return entity instanceof Container container ? Containers.findMark(container) : null;
+		return Nesting.inEntity(entity);
 	}
 
 

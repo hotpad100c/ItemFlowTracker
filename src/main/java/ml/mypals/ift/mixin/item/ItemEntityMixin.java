@@ -8,8 +8,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import ml.mypals.ift.track.Containers;
 import ml.mypals.ift.track.HighlightManager;
+import ml.mypals.ift.track.Nesting;
 import ml.mypals.ift.track.TrackMark;
 import ml.mypals.ift.track.Tracking;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -49,7 +49,7 @@ public abstract class ItemEntityMixin {
 			return;
 		}
 
-		TrackMark mark = Containers.findMarkInStack(self.getItem());
+		TrackMark mark = Nesting.inStack(self.getItem());
 
 		if (this.itemflowtracker$hasApplied && Objects.equals(this.itemflowtracker$applied, mark)) {
 			return;

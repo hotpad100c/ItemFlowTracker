@@ -10,6 +10,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import ml.mypals.ift.track.HighlightManager;
+import ml.mypals.ift.track.Nesting;
 import ml.mypals.ift.track.TrackMark;
 import ml.mypals.ift.track.Tracking;
 import net.minecraft.core.NonNullList;
@@ -106,6 +107,8 @@ public abstract class AbstractContainerMenuMixin {
 
 			if (mark != null) {
 				Tracking.arrive(now, mark, arrived);
+				HighlightManager.onEnterContainer(slot.container);
+			} else if (Nesting.carriesMark(now)) {
 				HighlightManager.onEnterContainer(slot.container);
 			}
 		}

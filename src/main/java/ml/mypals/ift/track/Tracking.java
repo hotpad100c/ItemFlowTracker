@@ -169,6 +169,16 @@ public class Tracking {
 		}
 	}
 
+	/**
+	 * Items that were split off for a transfer and then handed straight back because the destination
+	 * would not take them. Nothing left the session, so the split has to be refunded - otherwise a
+	 * hopper pointed at a container that cannot accept the item bleeds the budget dry, one item every
+	 * eight ticks, and the whole session quietly retires.
+	 */
+	public static void returned(ItemStack stack) {
+		moved(stack);
+	}
+
 	public static void moved(ItemStack stack) {
 		TrackMark mark = getRaw(stack);
 

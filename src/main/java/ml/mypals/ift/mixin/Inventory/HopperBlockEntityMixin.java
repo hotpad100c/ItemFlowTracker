@@ -16,6 +16,24 @@ import net.minecraft.world.level.block.entity.HopperBlockEntity;
 
 @Mixin(HopperBlockEntity.class)
 public abstract class HopperBlockEntityMixin {
+	/**
+	 * Callers split an item off the source before calling this ({@code removeItem} -> {@code split},
+	 * which spends budget) and simply restore the count if the move fails. Whatever comes back here
+	 * never went anywhere, so it has to be refunded; {@code tryMoveInItem} has already refunded the
+	 * part that did land.
+	 */
+	@Inject(
+			method = "addItem(Lnet/minecraft/world/Container;Lnet/minecraft/world/Container;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/core/Direction;)Lnet/minecraft/world/item/ItemStack;",
+			at = @At("RETURN")
+	)
+	private static void itemflowtracker$refundRejected(Container source, Container target, ItemStack stack, Direction direction, CallbackInfoReturnable<ItemStack> cir) {
+		ItemStack rejected = cir.getReturnValue();
+
+		if (rejected != null && !rejected.isEmpty()) {
+			Tracking.returned(rejected);
+		}
+	}
+
 	@Inject(
 			method = "tryMoveInItem",
 			at = @At(value = "INVOKE", target = "Lnet/minecraft/world/Container;setItem(ILnet/minecraft/world/item/ItemStack;)V", shift = At.Shift.AFTER)

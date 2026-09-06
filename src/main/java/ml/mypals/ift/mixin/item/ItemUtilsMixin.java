@@ -16,12 +16,7 @@ import net.minecraft.world.item.ItemUtils;
 
 @Mixin(ItemUtils.class)
 public abstract class ItemUtilsMixin {
-	/**
-	 * ordinal 0 = the first argument of the handler's own type, which is the only Stream this method
-	 * takes. Addressing it by name needs the target's debug info; by index needs the LVT slot. The
-	 * handler then repeats the target's <em>full</em> argument list after the modified value -
-	 * capturing only part of it is what made this fail to bind.
-	 */
+
 	@ModifyVariable(method = "onContainerDestroyed", at = @At("HEAD"), argsOnly = true, ordinal = 0)
 	private static Stream<ItemStack> itemflowtracker$markSpilledContents(
 			Stream<ItemStack> value, ItemEntity container, Stream<ItemStack> contents) {

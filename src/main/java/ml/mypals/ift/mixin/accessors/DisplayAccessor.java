@@ -21,4 +21,10 @@ public interface DisplayAccessor {
 
 	@Invoker("setBrightnessOverride")
 	void itemflowtracker$setBrightnessOverride(Brightness brightness);
+
+	@Invoker("setWidth")
+	void itemflowtracker$setWidth(float width);
+
+	@Invoker("setHeight")
+	void itemflowtracker$setHeight(float height);
 }

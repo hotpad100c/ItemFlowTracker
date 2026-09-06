@@ -19,7 +19,6 @@ import ml.mypals.ift.mixin.accessors.BlockDisplayAccessor;
 import ml.mypals.ift.mixin.accessors.DisplayAccessor;
 import ml.mypals.ift.mixin.accessors.ItemDisplayAccessor;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.GlobalPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
@@ -59,13 +58,21 @@ public class HighlightManager {
 	private static final Set<UUID> OWNED = new HashSet<>();
 
 	private static final Block PATH_MARKER_BLOCK = Blocks.STAINED_GLASS.black();
-	private static final float PATH_MARKER_SIZE = 0.2F;
+
+	private static final float PATH_LINE_THICKNESS = 0.06F;
+
+	private static final double PATH_MAX_SEGMENT = 8.0;
+
+	private static final float PATH_CULLING_SIZE = 64.0F;
 
 	private static final Map<TrackMark, Trail> TRAILS = new HashMap<>();
 
 	private static final class Trail {
-		final Set<GlobalPos> stamped = new HashSet<>();
 		final List<Display> markers = new ArrayList<>();
+		@Nullable
+		ResourceKey<Level> lastDimension;
+		@Nullable
+		Vec3 last;
 	}
 
 	private static final class Highlight {
@@ -167,16 +174,19 @@ public class HighlightManager {
 
 	private static void tickPath(ServerLevel level) {
 		long time = level.getGameTime();
+
+		Set<TrackMark> sampled = new HashSet<>();
 		Map<Integer, Highlight> entities = ENTITIES.get(level.dimension());
 
 		if (entities != null) {
 			for (Map.Entry<Integer, Highlight> entry : entities.entrySet()) {
 				TrackMark mark = entry.getValue().mark;
 
-				if (wantsStamp(mark, time)) {
+				if (wantsStamp(mark, time) && !sampled.contains(mark)) {
 					Entity entity = level.getEntity(entry.getKey());
 
 					if (entity != null && !entity.isRemoved()) {
+						sampled.add(mark);
 						stamp(level, mark, entity.position());
 					}
 				}
@@ -189,7 +199,8 @@ public class HighlightManager {
 			for (Map.Entry<BlockPos, Highlight> entry : blocks.entrySet()) {
 				TrackMark mark = entry.getValue().mark;
 
-				if (wantsStamp(mark, time) && level.isLoaded(entry.getKey())) {
+				if (wantsStamp(mark, time) && !sampled.contains(mark) && level.isLoaded(entry.getKey())) {
+					sampled.add(mark);
 					stamp(level, mark, Vec3.atCenterOf(entry.getKey()));
 				}
 			}
@@ -205,29 +216,52 @@ public class HighlightManager {
 
 
 	private static void stamp(ServerLevel level, TrackMark mark, Vec3 at) {
-		GlobalPos key = GlobalPos.of(level.dimension(), BlockPos.containing(at));
 		Trail trail = TRAILS.computeIfAbsent(mark, ignored -> new Trail());
+		Vec3 previous = trail.last;
+		boolean sameLevel = level.dimension().equals(trail.lastDimension);
 
-		if (!trail.stamped.add(key)) {
+		if (previous != null && sameLevel && BlockPos.containing(previous).equals(BlockPos.containing(at))) {
 			return;
 		}
 
+		if (previous != null && sameLevel) {
+			double distance = previous.distanceTo(at);
+
+			if (distance > 1.0E-4 && distance <= PATH_MAX_SEGMENT) {
+				spawnSegment(level, mark, previous, at, trail);
+			}
+		}
+
+		trail.lastDimension = level.dimension();
+		trail.last = at;
+	}
+
+		private static void spawnSegment(ServerLevel level, TrackMark mark, Vec3 start, Vec3 end, Trail trail) {
+		Vec3 direction = end.subtract(start);
+		float length = (float) direction.length();
+
+		Quaternionf rotation = new Quaternionf().rotateTo(
+				new Vector3f(0.0F, 0.0F, 1.0F),
+				new Vector3f((float) direction.x, (float) direction.y, (float) direction.z).normalize());
+		Vector3f offset = rotation.transform(
+				new Vector3f(-PATH_LINE_THICKNESS / 2.0F, -PATH_LINE_THICKNESS / 2.0F, 0.0F));
+
 		Display.BlockDisplay display = new Display.BlockDisplay(EntityTypes.BLOCK_DISPLAY, level);
-		display.setPos(at.x, at.y, at.z);
+		display.setPos(start.x, start.y, start.z);
 		((BlockDisplayAccessor) display).itemflowtracker$setBlockState(PATH_MARKER_BLOCK.defaultBlockState());
 		prepare(display, mark);
 
-		float half = PATH_MARKER_SIZE / 2.0F;
-		((DisplayAccessor) display).itemflowtracker$setTransformation(new Transformation(
-				new Vector3f(-half, -half, -half),
-				new Quaternionf(),
-				new Vector3f(PATH_MARKER_SIZE, PATH_MARKER_SIZE, PATH_MARKER_SIZE),
+		DisplayAccessor accessor = (DisplayAccessor) display;
+		accessor.itemflowtracker$setTransformation(new Transformation(
+				offset,
+				rotation,
+				new Vector3f(PATH_LINE_THICKNESS, PATH_LINE_THICKNESS, length),
 				new Quaternionf()));
+		accessor.itemflowtracker$setWidth(PATH_CULLING_SIZE);
+		accessor.itemflowtracker$setHeight(PATH_CULLING_SIZE);
 
 		if (spawn(level, display)) {
 			trail.markers.add(display);
-		} else {
-			trail.stamped.remove(key);
 		}
 	}
 

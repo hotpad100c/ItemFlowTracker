@@ -11,17 +11,20 @@ import ml.mypals.ift.track.TrackMark;
 import ml.mypals.ift.track.Tracking;
 import net.minecraft.core.Direction;
 import net.minecraft.world.Container;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.HopperBlockEntity;
 
 @Mixin(HopperBlockEntity.class)
 public abstract class HopperBlockEntityMixin {
-	/**
-	 * Callers split an item off the source before calling this ({@code removeItem} -> {@code split},
-	 * which spends budget) and simply restore the count if the move fails. Whatever comes back here
-	 * never went anywhere, so it has to be refunded; {@code tryMoveInItem} has already refunded the
-	 * part that did land.
-	 */
+	@Inject(
+			method = "addItem(Lnet/minecraft/world/Container;Lnet/minecraft/world/entity/item/ItemEntity;)Z",
+			at = @At("RETURN")
+	)
+	private static void itemflowtracker$pickedUpFrom(Container container, ItemEntity itemEntity, CallbackInfoReturnable<Boolean> cir) {
+		HighlightManager.onEnterContainer(container, itemEntity.position());
+	}
+
 	@Inject(
 			method = "addItem(Lnet/minecraft/world/Container;Lnet/minecraft/world/Container;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/core/Direction;)Lnet/minecraft/world/item/ItemStack;",
 			at = @At("RETURN")
@@ -44,7 +47,7 @@ public abstract class HopperBlockEntityMixin {
 		}
 
 		if (Nesting.carriesMark(stack)) {
-			HighlightManager.onEnterContainer(target);
+			HighlightManager.onEnterContainer(target, HighlightManager.positionOf(source));
 		}
 	}
 
@@ -62,7 +65,7 @@ public abstract class HopperBlockEntityMixin {
 		}
 
 		if (Nesting.carriesMark(stack)) {
-			HighlightManager.onEnterContainer(target);
+			HighlightManager.onEnterContainer(target, HighlightManager.positionOf(source));
 		}
 	}
 }

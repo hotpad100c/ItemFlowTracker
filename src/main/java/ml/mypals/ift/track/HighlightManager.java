@@ -92,6 +92,10 @@ public class HighlightManager {
 	}
 
 	public static void onEnterContainer(@Nullable Container container) {
+		onEnterContainer(container, null);
+	}
+
+	public static void onEnterContainer(@Nullable Container container, @Nullable Vec3 from) {
 		Containers.forEachLeaf(container, leaf -> {
 			if (Nesting.inContainer(leaf) == null) {
 				return;
@@ -99,17 +103,40 @@ public class HighlightManager {
 
 			if (leaf instanceof BlockEntity blockEntity) {
 				if (blockEntity.getLevel() instanceof ServerLevel level) {
-					watchBlock(level, blockEntity.getBlockPos());
+					watchBlock(level, blockEntity.getBlockPos(), from);
 				}
 			} else if (leaf instanceof Entity entity && !entity.level().isClientSide()) {
-				watchEntity(entity);
+				watchEntity(entity, from);
 			}
 		});
 	}
 
+	@Nullable
+	public static Vec3 positionOf(@Nullable Container container) {
+		Vec3[] found = new Vec3[1];
+
+		Containers.forEachLeaf(container, leaf -> {
+			if (found[0] != null) {
+				return;
+			}
+
+			if (leaf instanceof BlockEntity blockEntity) {
+				found[0] = Vec3.atCenterOf(blockEntity.getBlockPos());
+			} else if (leaf instanceof Entity entity) {
+				found[0] = entity.position();
+			}
+		});
+
+		return found[0];
+	}
+
 	public static void watchBlock(ServerLevel level, BlockPos pos) {
-		BLOCKS.computeIfAbsent(level.dimension(), key -> new HashMap<>())
-				.computeIfAbsent(pos.immutable(), key -> new Highlight());
+		watchBlock(level, pos, null);
+	}
+
+	public static void watchBlock(ServerLevel level, BlockPos pos, @Nullable Vec3 from) {
+		seed(BLOCKS.computeIfAbsent(level.dimension(), key -> new HashMap<>())
+				.computeIfAbsent(pos.immutable(), key -> new Highlight()), from);
 	}
 
 	public static void markBlock(ServerLevel level, BlockPos pos, TrackMark mark) {
@@ -162,8 +189,18 @@ public class HighlightManager {
 	}
 
 	public static void watchEntity(Entity entity) {
-		ENTITIES.computeIfAbsent(entity.level().dimension(), key -> new HashMap<>())
-				.computeIfAbsent(entity.getId(), key -> new Highlight());
+		watchEntity(entity, null);
+	}
+
+	public static void watchEntity(Entity entity, @Nullable Vec3 from) {
+		seed(ENTITIES.computeIfAbsent(entity.level().dimension(), key -> new HashMap<>())
+				.computeIfAbsent(entity.getId(), key -> new Highlight()), from);
+	}
+
+	private static void seed(Highlight highlight, @Nullable Vec3 from) {
+		if (highlight.trailLast == null) {
+			highlight.trailLast = from;
+		}
 	}
 
 	public static void tick(ServerLevel level) {
@@ -229,7 +266,7 @@ public class HighlightManager {
 			return;
 		}
 
-		Vec3 previous = highlight.trailLast != null ? highlight.trailLast : inheritCursor(level, mark, at);
+		Vec3 previous = highlight.trailLast;
 
 		if (previous != null) {
 			double distance = previous.distanceTo(at);
@@ -246,43 +283,6 @@ public class HighlightManager {
 		highlight.trailLast = at;
 	}
 
-
-	@Nullable
-	private static Vec3 inheritCursor(ServerLevel level, TrackMark mark, Vec3 at) {
-		Vec3 nearest = null;
-		double best = PATH_MAX_SEGMENT;
-
-		for (Highlight other : allHighlights(level)) {
-			if (other.mark != mark || other.trailLast == null) {
-				continue;
-			}
-
-			double distance = other.trailLast.distanceTo(at);
-
-			if (distance <= best) {
-				best = distance;
-				nearest = other.trailLast;
-			}
-		}
-
-		return nearest;
-	}
-
-	private static List<Highlight> allHighlights(ServerLevel level) {
-		List<Highlight> all = new ArrayList<>();
-		Map<Integer, Highlight> entities = ENTITIES.get(level.dimension());
-		Map<BlockPos, Highlight> blocks = BLOCKS.get(level.dimension());
-
-		if (entities != null) {
-			all.addAll(entities.values());
-		}
-
-		if (blocks != null) {
-			all.addAll(blocks.values());
-		}
-
-		return all;
-	}
 
 		private static void spawnSegment(ServerLevel level, TrackMark mark, Vec3 start, Vec3 end, Trail trail) {
 		Vec3 direction = end.subtract(start);
